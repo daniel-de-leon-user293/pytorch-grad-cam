@@ -97,6 +97,10 @@ class BaseCAM:
             self.model.zero_grad()
             loss = sum([target(output) for target, output in zip(targets, outputs)])
             loss.backward(retain_graph=True)
+            if 'hpu' in str(self.device):
+                import habana_frameworks.torch.core as htcore
+                htcore.mark_step()
+
 
         # In most of the saliency attribution papers, the saliency is
         # computed with a single target layer.
