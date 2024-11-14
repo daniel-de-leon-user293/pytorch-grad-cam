@@ -15,13 +15,11 @@ from pytorch_grad_cam.utils.image import (
     show_cam_on_image, deprocess_image, preprocess_image
 )
 from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
-import habana_frameworks.torch.core as htcore
 import time
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--device', type=str, default='cpu',
-                        help='Torch device to use')
+
     parser.add_argument(
         '--image-path',
         type=str,
@@ -47,6 +45,7 @@ def get_args():
                         help='Output directory to save the images')
     parser.add_argument('--batch-size', type=int, default=1, help='Number of times to compute the provided image(s)')
     parser.add_argument('--save-output', action='store_true', default=False)
+    parser.add_argument('--device', type=str, default='cpu', help='cpu or hpu')
     args = parser.parse_args()
     
     if args.device:
@@ -107,6 +106,10 @@ if __name__ == '__main__':
     """
 
     args = get_args()
+
+    if args.device=='hpu':
+        import habana_frameworks.torch.core as htcore
+
     methods = {
         "gradcam": GradCAM,
         "hirescam": HiResCAM,
@@ -176,5 +179,9 @@ if __name__ == '__main__':
     print(total_times) 
 
     # Save the dictionary to a file
-    with open(f"{args.method}_{args.device}_{batches[-1]}.json", "w") as f:
+    output_fname = f"{args.method}_{args.device}_{batches[-1]}it_0"
+    while os.path.exists(f'{output_fname}.json'):
+        output_fname[-1] = int(output_fname[-1] + 1)
+
+    with open(f"{output_fname}.json", "w") as f:
         json.dump(total_times, f)
