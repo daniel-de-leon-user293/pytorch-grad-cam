@@ -146,7 +146,7 @@ if __name__ == '__main__':
     batches = [1] 
     for batch in batches:
         print(batch)
-        times_per_image = []
+        times_per_image = {}
         for fname in os.listdir(args.image_path):
             rgb_img = cv2.imread(os.path.join(args.image_path, fname), 1)[:, :, ::-1]
             rgb_img = np.float32(rgb_img) / 255
@@ -157,7 +157,7 @@ if __name__ == '__main__':
             # get all image times for this image
             image_times, grayscale_cam, gb = run_cam(args, model, target_layers, input_tensor, batch)
             print({fname: sum(image_times)})
-            times_per_image.append({fname: sum(image_times)})
+            times_per_image[fname]= sum(image_times)
            
             if args.save_output:
                 cam_mask = cv2.merge([grayscale_cam, grayscale_cam, grayscale_cam])
