@@ -25,8 +25,16 @@ def get_args():
         type=str,
         default='./examples/both.png',
         help='Input image path')
+
+    parser.add_argument(
+        '--exp-name',
+        type=str,
+        default='',
+        help='Name to append to saved json file.')
+
     parser.add_argument('--aug-smooth', action='store_true',
                         help='Apply test time augmentation to smooth the CAM')
+
     parser.add_argument(
         '--eigen-smooth',
         action='store_true',
@@ -147,7 +155,7 @@ if __name__ == '__main__':
     for batch in batches:
         print(batch)
         times_per_image = {}
-        for fname in os.listdir(args.image_path):
+        for fname in sorted(os.listdir(args.image_path)):
             rgb_img = cv2.imread(os.path.join(args.image_path, fname), 1)[:, :, ::-1]
             rgb_img = np.float32(rgb_img) / 255
             input_tensor = preprocess_image(rgb_img,
@@ -179,9 +187,9 @@ if __name__ == '__main__':
     print(total_times) 
 
     # Save the dictionary to a file
-    output_fname = f"{args.method}_{args.device}_{batches[-1]}it_0"
+    output_fname = f"{args.exp_name}_{args.method}_{args.device}_{batches[-1]}it_0"
     while os.path.exists(f'{output_fname}.json'):
-        output_fname[-1] = int(output_fname[-1] + 1)
+        output_fname = output_fname[:-1] + str(int(output_fname[-1]) + 1)
 
     with open(f"{output_fname}.json", "w") as f:
         json.dump(total_times, f)
