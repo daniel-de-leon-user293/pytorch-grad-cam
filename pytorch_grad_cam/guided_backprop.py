@@ -91,28 +91,28 @@ class GuidedBackpropReLUModel:
         '''
         START OF POC CODE TO ACCELERATE ON GAUDI
         '''
-        hpu = 'hpu' in str(self.device)
-        if hpu:
+        is_hpu = 'hpu' in str(self.device)
+        if is_hpu:
             import habana_frameworks.torch.core as htcore
             import habana_frameworks.torch as htorch
             htcore.mark_step()
 
         
         start = time()
-        if hpu: 
-            with hpu.metrics.metric_localcontext("graph_compilation") as local_metric:
+        if is_hpu: 
+            with htorch.hpu.metrics.metric_localcontext("graph_compilation") as local_metric:
                 output = input_img.grad.data
         else:
             output = input_img.grad.cpu().data.numpy()
         end = time()
-        if hpu:
+        if is_hpu:
             print(htorch.hpu.memory_summary())
             print(local_metric.stats())
         print('autograd time:',end-start)
 
         output = output[0, :, :, :]
         start = time()
-        if hpu:
+        if is_hpu:
             output = output.permute(1, 2, 0)
         else:
             output = output.transpose((1, 2, 0))
