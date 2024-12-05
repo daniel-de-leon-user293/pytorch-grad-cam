@@ -91,6 +91,7 @@ def run_cam(args, model, target_layers, input_tensor, batch):
                                 aug_smooth=args.aug_smooth,
                                 eigen_smooth=args.eigen_smooth)
 
+            #end = time.time()
             grayscale_cam = grayscale_cam[0, :]
 
             cam_image = show_cam_on_image(rgb_img, grayscale_cam, use_rgb=True)
@@ -165,6 +166,7 @@ if __name__ == '__main__':
             # get all image times for this image
             image_times, grayscale_cam, gb = run_cam(args, model, target_layers, input_tensor, batch)
             print({fname: sum(image_times)})
+            print()
             times_per_image[fname]= sum(image_times)
            
             if args.save_output:

@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from torch.autograd import Function
 from pytorch_grad_cam.utils.find_layers import replace_all_layer_type_recursive
+from time import time
 
 
 class GuidedBackpropReLU(Function):
@@ -79,7 +80,7 @@ class GuidedBackpropReLUModel:
 
         input_img = input_img.requires_grad_(True)
 
-        output = self.forward(input_img)
+        output = self.forward(input_img).to(self.device)
 
         if target_category is None:
             target_category = np.argmax(output.cpu().data.numpy())
@@ -87,10 +88,41 @@ class GuidedBackpropReLUModel:
         loss = output[0, target_category]
         loss.backward(retain_graph=True)
 
-        output = input_img.grad.cpu().data.numpy()
-        output = output[0, :, :, :]
-        output = output.transpose((1, 2, 0))
+        '''
+        START OF POC CODE TO ACCELERATE ON GAUDI
+        '''
+        hpu = 'hpu' in str(self.device)
+        if hpu:
+            import habana_frameworks.torch.core as htcore
+            import habana_frameworks.torch as htorch
+            htcore.mark_step()
 
+        
+        start = time()
+        #output = input_img.grad.cpu().data.numpy()
+        if hpu: 
+            with hpu.metrics.metric_localcontext("graph_compilation") as local_metric:
+                output = input_img.grad.data[0, :, :, :]
+        else:
+            output = input_img.grad.cpu().data.numpy()
+        end = time()
+
+        if hpu:
+            print(htorch.hpu.memory_summary())
+            print(local_metric.stats())
+        print('autograd time:',end-start)
+
+        start = time()
+        #output = output[0, :, :, :]
+        if hpu:
+            output = output.permute(1, 2, 0)
+        else:
+            output = output.transpose((1, 2, 0))
+        end = time()
+        print('Transpose time:',end-start)
+        '''
+        END OF POC CODE TO ACCELERATE ON GAUDI
+        '''
         replace_all_layer_type_recursive(self.model,
                                          GuidedBackpropReLUasModule,
                                          torch.nn.ReLU())
