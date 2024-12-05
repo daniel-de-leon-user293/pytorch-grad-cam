@@ -99,21 +99,19 @@ class GuidedBackpropReLUModel:
 
         
         start = time()
-        #output = input_img.grad.cpu().data.numpy()
         if hpu: 
             with hpu.metrics.metric_localcontext("graph_compilation") as local_metric:
-                output = input_img.grad.data[0, :, :, :]
+                output = input_img.grad.data
         else:
             output = input_img.grad.cpu().data.numpy()
         end = time()
-
         if hpu:
             print(htorch.hpu.memory_summary())
             print(local_metric.stats())
         print('autograd time:',end-start)
 
+        output = output[0, :, :, :]
         start = time()
-        #output = output[0, :, :, :]
         if hpu:
             output = output.permute(1, 2, 0)
         else:
